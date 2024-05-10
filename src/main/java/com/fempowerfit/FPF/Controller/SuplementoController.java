@@ -5,6 +5,9 @@ import com.fempowerfit.FPF.repository.SuplementoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
@@ -12,6 +15,10 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,14 +26,21 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/suplemento")
+
+@CacheConfig(cacheNames = "suplemento")
+@Tag(name = "suplementos", description = "Endpoint relacionados com suplementos")
 public class SuplementoController {
     
+    private static final HttpStatus CREATED = null;
+
     Logger log = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private SuplementoRepository suplementoRepository;
 
     @GetMapping("/meusSuplementos")
+    @Cacheable
+    @Operation(summary = "Lista todos os suplementos", description = "Endpoint que retorna um array de objetos do tipo  de suplementos utilizados peloo usuario")
     public Page<Suplemento> listar(
         @RequestParam(required = false) String suplemento,
         @RequestParam(required = false) String tipo,
@@ -56,6 +70,11 @@ public class SuplementoController {
     }
     
     @PostMapping
+    @CacheEvict(allEntries = true)
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "400", description = "Erro de validação do suplemento"),
+        @ApiResponse(responseCode = "201", description = "suplemento cadastrado com sucesso")
+})
     public ResponseEntity<Suplemento> cadastrarSuplemento(@RequestBody Suplemento suplemento) {
         Suplemento entity = toEntity(suplemento);
         suplementoRepository.save(entity);
